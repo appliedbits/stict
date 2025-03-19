@@ -26,3 +26,6 @@
 /trillian_log_server
 /trillian_log_signer
 /trillian.json
+mysql_data/
+tests/
+ctfe_config/

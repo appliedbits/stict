@@ -1,0 +1,74 @@
+services:
+  # Database for Trillian
+  db:
+    container_name: stict-db
+    image: mysql:8
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=zaphod
+      - MYSQL_DATABASE=test
+      - MYSQL_USER=test
+      - MYSQL_PASSWORD=zaphod
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - ./mysql_data:/var/lib/mysql
+
+  # Trillian Log Server
+  trillian-log-server:
+    image: conceptmasters/trillian-log-server:latest
+    command: [
+      "--storage_system=mysql",
+      "--mysql_uri=test:zaphod@tcp(db:3306)/test",
+      "--rpc_endpoint=0.0.0.0:8090",
+      "--http_endpoint=0.0.0.0:8091",
+      "--alsologtostderr",
+    ]
+    restart: always
+    ports:
+      - "8090:8090"
+      - "8091:8091"
+    depends_on:
+      - db
+
+  # Trillian Log Signer
+  trillian-log-signer:
+    image: conceptmasters/trillian-log-signer:latest
+    command: [
+      "--storage_system=mysql",
+      "--mysql_uri=test:zaphod@tcp(db:3306)/test",
+      "--rpc_endpoint=0.0.0.0:8090",
+      "--http_endpoint=0.0.0.0:8091",
+      "--force_master",
+      "--alsologtostderr",
+    ]
+    restart: always
+    ports:
+      - "8092:8091"
+    depends_on:
+      - db
+      - trillian-log-server
+
+  # STICT Personality
+  stict:
+    image: conceptmasters/stict
+    profiles: ["frontend"]
+    command: [
+      "--log_rpc_server=trillian-log-server:8090",
+      "--log_config=/ctfe-config/ct_server.cfg",
+      "--http_endpoint=0.0.0.0:8091",
+      "--alsologtostderr",
+    ]
+    restart: always
+    ports:
+      - "8080:8091"
+    depends_on:
+      - db
+      - trillian-log-server
+    volumes:
+      - ./ctfe_config:/ctfe-config
