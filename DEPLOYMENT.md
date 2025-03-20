@@ -37,8 +37,17 @@ docker volume create --driver local --opt type=none --opt device=${CTFE_CONF_DIR
 
 Now that this configuration is available, you can bring up the CTFE:
 
-```
 # Terminal 1
+
+```
 <Ctrl C> # kill the previous docker compose up command
 tilt up
+```
+
+# Terminal 2
+
+Assuming there are no errors in the log, then the following command should return tree head for tree size 0.
+
+```
+go run ./client/ctclient get-sth --log_uri http://localhost:8080/testlog
 ```
